@@ -28,51 +28,6 @@ def apply_convolution(image, dimensoes, offset, matriz):
     return output_image
 
 
-def aplicar_correlacao(imagem, dimensoes, offset, matriz):
-    print("Shape da imagem:", imagem.shape)
-    altura, largura = imagem.shape[:2]
-
-    m, n = dimensoes
-
-    # Cria uma nova imagem inicializada como um array de zeros
-    # Esta imagem será do mesmo tamanho e tipo que a imagem original
-    nova_imagem = np.zeros_like(imagem)
-
-    # Itera sobre cada pixel da imagem
-    for y in tqdm(range(altura), desc="Aplicando correlação"):
-        for x in range(largura):
-            # Inicializa a soma dos valores RGB para o novo pixel
-            soma_r = soma_g = soma_b = 0
-
-            # Itera sobre o filtro/máscara
-            for dy in range(-m//2, m//2 + 1):
-                for dx in range(-n//2, n//2 + 1):
-                    # Calcula as coordenadas do pixel atual na imagem para aplicação do filtro
-                    x_filtro, y_filtro = x + dx, y + dy
-
-                    # Verifica se as coordenadas estão dentro dos limites da imagem
-                    if 0 <= x_filtro < largura and 0 <= y_filtro < altura:
-                        # Obtém o pixel atual na imagem
-                        pixel = imagem[y_filtro, x_filtro]
-                        # Obtém o coeficiente correspondente do filtro para o pixel atual
-                        coeficiente_filtro = matriz[dy + m//2][dx + n//2]
-
-                        # Aplica o filtro e soma os resultados para cada canal de cor
-                        soma_r += pixel[0] * coeficiente_filtro
-                        soma_g += pixel[1] * coeficiente_filtro
-                        soma_b += pixel[2] * coeficiente_filtro
-
-            # Após aplicar o filtro em todos os pixels sob o kernel do filtro,
-            # ajusta os valores acumulados com base no offset e se certifica de que
-            # permanecem dentro dos limites válidos de um byte (0 a 255)
-            nova_imagem[y, x] = [min(255, max(0, soma_r + offset)),
-                                 min(255, max(0, soma_g + offset)),
-                                 min(255, max(0, soma_b + offset))]
-
-    # Retorna a imagem resultante após a aplicação do filtro
-    return nova_imagem
-
-
 def filtro_sobel(imagem, arq):
     filtered_image = apply_convolution(
         imagem, arq.dimensoes, arq.offset, arq.matriz)
@@ -102,9 +57,9 @@ def triangular_filter(pixel_value):
 def apply_triangular_filter(image_array):
     filtered_image = np.zeros_like(image_array)
 
-    for i in range(image_array.shape[0]):
+    for i in tqdm(range(image_array.shape[0]), desc="Applying triangular filter"):
         for j in range(image_array.shape[1]):
-            for k in range(3):  # Para os canais R, G, B
+            for k in range(3):  # For R, G, B channels
                 filtered_image[i, j, k] = triangular_filter(
                     image_array[i, j, k])
 
@@ -115,7 +70,7 @@ def apply_triangular_filter(image_array):
 
 def rgb_to_yiq(rgb_array):
     yiq_array = np.zeros_like(rgb_array, dtype=float)
-    for i in range(rgb_array.shape[0]):
+    for i in tqdm(range(rgb_array.shape[0]), desc="Converting RGB to YIQ"):
         for j in range(rgb_array.shape[1]):
             r, g, b = rgb_array[i, j]
             y = 0.299 * r + 0.587 * g + 0.114 * b
@@ -129,7 +84,7 @@ def rgb_to_yiq(rgb_array):
 
 def yiq_to_rgb(yiq_array):
     rgb_array = np.zeros_like(yiq_array, dtype=float)
-    for i in range(yiq_array.shape[0]):
+    for i in tqdm(range(yiq_array.shape[0]), desc="Converting YIQ to RGB"):
         for j in range(yiq_array.shape[1]):
             y, i_value, q = yiq_array[i, j]
             r = np.clip(y + 0.956 * i_value + 0.621 * q, 0, 255)
@@ -146,7 +101,7 @@ def apply_filter_to_y_band(image_array):
     yiq_image = rgb_to_yiq(image_array)
 
     # Aplica o filtro triangular apenas na banda Y (luminância)
-    for i in range(yiq_image.shape[0]):
+    for i in tqdm(range(yiq_image.shape[0]), desc="Applying triangular filter"):
         for j in range(yiq_image.shape[1]):
             yiq_image[i, j, 0] = triangular_filter(
                 yiq_image[i, j, 0])  # Filtro apenas na banda Y
@@ -158,7 +113,7 @@ def apply_filter_to_y_band(image_array):
 
 
 def main():
-    # arq_gauss = FilterModel("assets/filtro_gaussiano.txt")
+    arq_gauss = FilterModel("assets/filtro_gaussiano.txt")
     # arq_sobel_vert = FilterModel("assets/filtro_sobel_vertical.txt")
     # arq_sobel_hor = FilterModel("assets/filtro_sobel_horizontal.txt")
     # print("arq_gauss:", arq_gauss)
@@ -166,10 +121,10 @@ def main():
     # print("arq_sobel_vert:", arq_sobel_vert)
     # print("arq_sobel_hor:", arq_sobel_hor)
 
-    # image = ImageModel("assets/testpat.1k.color2.tif")
-    # image_gauss = filtro_gaussiano(image.array_img, arq_gauss)
-    # image.atualizar_imagem(image_gauss)
-    # image.salvar_imagem("outputs/testpat.tif")
+    image = ImageModel("assets/testpat.1k.color2.tif")
+    image_gauss = filtro_gaussiano(image.array_img, arq_gauss)
+    image.atualizar_imagem(image_gauss)
+    image.salvar_imagem("outputs/testpat.png")
 
     # shapes_vert = ImageModel("assets/Shapes.png")
     # img_sobel_vert = filtro_sobel(shapes_vert.array_img, arq_sobel_vert)
