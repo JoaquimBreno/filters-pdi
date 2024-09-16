@@ -207,13 +207,10 @@ def main():
     # Criar uma instância da classe ImageModel e carregar a imagem
     # Substitua pelo nome da sua imagem
     img_model = ImageModel('assets/testpat.1k.color2.tif')
-
     # Aplicar o filtro à banda Y (YIQ)
     filtered_image = apply_filter_to_y_band(img_model.array_img)
-
     # Atualizar a imagem no modelo com o novo array de pixels filtrados
     img_model.atualizar_imagem(filtered_image)
-
     # Salvar a imagem filtrada
     img_model.salvar_imagem('outputs/pontualYIQ.jpg')
 
