@@ -37,101 +37,6 @@ def apply_convolution(image, dimensoes, offset, mask):
     new_img[new_img < 0] = 0
 
     return new_img.astype(np.uint8)
-'''
-def apply_convolution(image: np.array, dimensoes: tuple, offset: int, matriz: np.array) -> np.array:
-    img = image.copy()
-    mask = matriz.copy()
-    new_img = np.zeros_like(img)
-
-    r_mask, c_mask = dimensoes
-
-    pivo = [int(np.ceil(r_mask / 2) - 1),
-            int(np.ceil(c_mask / 2) - 1)]
-
-    print('Pivo[i, j] =', pivo)
-
-    channels = img.shape[2] if len(img.shape) == 3 else 1
-
-    padded_img_shape = (img.shape[0] + 2 * pivo[0], img.shape[1] + 2 * pivo[1], channels)
-    img_padded = np.zeros(padded_img_shape, dtype=img.dtype)
-
-    if channels == 1:
-        img_padded[pivo[0]:pivo[0] + img.shape[0], pivo[1]:pivo[1] + img.shape[1], 0] = img
-    else:
-        img_padded[pivo[0]:pivo[0] + img.shape[0], pivo[1]:pivo[1] + img.shape[1], :] = img
-
-    strides = img_padded.strides
-    height, width = img.shape[0], img.shape[1]
-
-    if channels == 1:
-        sub_imgs = np.lib.stride_tricks.as_strided(
-            img_padded,
-            shape=(height, width, r_mask, c_mask),
-            strides=(strides[0], strides[1], strides[0], strides[1])
-        )
-
-        correlation = np.abs(np.einsum('ijkl, kl->ij', sub_imgs, mask))
-        new_img[:, :] = correlation
-    else:
-        sub_imgs = np.lib.stride_tricks.as_strided(
-            img_padded,
-            shape=(height, width, r_mask, c_mask, channels),
-            strides=(strides[0], strides[1], strides[0], strides[1], strides[2])
-        )
-
-        correlation = np.abs(np.einsum('ijklm,kl->ijm', sub_imgs, mask))
-        new_img[:, :, :] = correlation
-
-    new_img = new_img.astype(np.int16) + offset
-    new_img[new_img > 255] = 255
-    new_img[new_img < 0] = 0
-
-    return new_img.astype(np.uint8)
-'''
-def aplicar_correlacao(imagem, dimensoes, offset, matriz):
-    print("Shape da imagem:", imagem.shape)
-    altura, largura = imagem.shape[:2]
-
-    m, n = dimensoes
-
-    # Cria uma nova imagem inicializada como um array de zeros
-    # Esta imagem será do mesmo tamanho e tipo que a imagem original
-    nova_imagem = np.zeros_like(imagem)
-
-    # Itera sobre cada pixel da imagem
-    for y in tqdm(range(altura), desc="Aplicando correlação"):
-        for x in range(largura):
-            # Inicializa a soma dos valores RGB para o novo pixel
-            soma_r = soma_g = soma_b = 0
-
-            # Itera sobre o filtro/máscara
-            for dy in range(-m//2, m//2 + 1):
-                for dx in range(-n//2, n//2 + 1):
-                    # Calcula as coordenadas do pixel atual na imagem para aplicação do filtro
-                    x_filtro, y_filtro = x + dx, y + dy
-
-                    # Verifica se as coordenadas estão dentro dos limites da imagem
-                    if 0 <= x_filtro < largura and 0 <= y_filtro < altura:
-                        # Obtém o pixel atual na imagem
-                        pixel = imagem[y_filtro, x_filtro]
-                        # Obtém o coeficiente correspondente do filtro para o pixel atual
-                        coeficiente_filtro = matriz[dy + m//2][dx + n//2]
-
-                        # Aplica o filtro e soma os resultados para cada canal de cor
-                        soma_r += pixel[0] * coeficiente_filtro
-                        soma_g += pixel[1] * coeficiente_filtro
-                        soma_b += pixel[2] * coeficiente_filtro
-
-            # Após aplicar o filtro em todos os pixels sob o kernel do filtro,
-            # ajusta os valores acumulados com base no offset e se certifica de que
-            # permanecem dentro dos limites válidos de um byte (0 a 255)
-            nova_imagem[y, x] = [min(255, max(0, soma_r + offset)),
-                                 min(255, max(0, soma_g + offset)),
-                                 min(255, max(0, soma_b + offset))]
-
-    # Retorna a imagem resultante após a aplicação do filtro
-    return nova_imagem
-
 
 def filtro_sobel(imagem, arq):
     filtered_image = apply_convolution(
@@ -170,8 +75,6 @@ def triangular_filter(pixel_value):
         return np.clip(((255 - pixel_value) / 128) * 255, 0, 255)
 
 # Aplicação do filtro em uma imagem RGB
-
-
 def apply_triangular_filter(image_array):
     filtered_image = np.zeros_like(image_array)
 
@@ -184,8 +87,6 @@ def apply_triangular_filter(image_array):
     return filtered_image
 
 # Função para converter RGB para YIQ
-
-
 def rgb_to_yiq(rgb_array):
     yiq_array = np.zeros_like(rgb_array, dtype=float)
     for i in tqdm(range(rgb_array.shape[0]), desc="Converting RGB to YIQ"):
@@ -198,8 +99,6 @@ def rgb_to_yiq(rgb_array):
     return yiq_array
 
 # Função para converter YIQ para RGB
-
-
 def yiq_to_rgb(yiq_array):
     rgb_array = np.zeros_like(yiq_array, dtype=float)
     for i in tqdm(range(yiq_array.shape[0]), desc="Converting YIQ to RGB"):
@@ -212,8 +111,6 @@ def yiq_to_rgb(yiq_array):
     return rgb_array.astype(np.uint8)
 
 # Aplicação do filtro pontual apenas na banda Y
-
-
 def apply_filter_to_y_band(image_array):
     # Converte RGB para YIQ
     yiq_image = rgb_to_yiq(image_array)
@@ -228,7 +125,6 @@ def apply_filter_to_y_band(image_array):
     filtered_rgb_image = yiq_to_rgb(yiq_image)
 
     return filtered_rgb_image
-
 
 def main():
     arq_gauss = FilterModel("assets/filtro_gaussiano.txt")
