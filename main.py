@@ -41,13 +41,8 @@ def apply_convolution(image, dimensoes, offset, mask):
 def filtro_sobel(imagem, arq):
     filtered_image = apply_convolution(
         imagem, arq.dimensoes, arq.offset, arq.matriz)
-
-    filtered_image = np.abs(filtered_image)
-
-    filtered_image = (filtered_image / filtered_image.max()) * 255
-
+    
     return filtered_image
-
 
 def filtro_gaussiano(imagem, arq):
     matriz = [[elemento / 273 for elemento in linha] for linha in arq.matriz]
@@ -138,13 +133,14 @@ def main():
     image_gauss = filtro_gaussiano(image.array_img, arq_gauss)
     image.atualizar_imagem(image_gauss)
     image.salvar_imagem("outputs/tigre.jpeg")
-
     print("Imagem gauss salva com sucesso!")
+
     shapes_vert = ImageModel("assets/Shapes.png")
     img_sobel_vert = filtro_sobel(shapes_vert.array_img, arq_sobel_vert)
     shapes_vert.atualizar_imagem(img_sobel_vert)
     shapes_vert.salvar_imagem("outputs/shapes_sobel_vert.png")
     print("Imagem shapes_sobel_vert salva com sucesso!")
+
     shapes_hor = ImageModel("assets/Shapes.png")
     img_sobel_hor = filtro_sobel(shapes_hor.array_img, arq_sobel_hor)
     shapes_hor.atualizar_imagem(img_sobel_hor)
@@ -156,15 +152,49 @@ def main():
     cd_hor.atualizar_imagem(img_sobel_hor)
     cd_hor.salvar_imagem("outputs/cd_sobel_hor.png")
     print("Imagem cd_sobel_hor salva com sucesso!")
+    
+    #Aplicar a expansão de histograma na imagem combinada
+    #expanded_image = expansao_histograma(cd_hor.array_img)
+    xadrez_hor = ImageModel("assets/xadrez.png")
+    img_sobel_hor = filtro_sobel(xadrez_hor.array_img, arq_sobel_hor)
+    xadrez_hor.atualizar_imagem(img_sobel_hor)
+    xadrez_hor.salvar_imagem("outputs/xadrez_sobel_hor.png")
+    print("Imagem xadrez_sobel_hor salva com sucesso!")
+    xadrez_vert = ImageModel("assets/xadrez.png")
+    img_sobel_vert = filtro_sobel(xadrez_vert.array_img, arq_sobel_vert)
+    xadrez_vert.atualizar_imagem(img_sobel_vert)
+    xadrez_vert.salvar_imagem("outputs/xadrez_sobel_vert.png")
+    print("Imagem xadrez_sobel_vert salva com sucesso!")
 
+    xadrez_full = ImageModel("assets/xadrez.png")
+    xadrez_expanded = np.abs(img_sobel_hor.astype(np.int16)) + np.abs(img_sobel_vert.astype(np.int16))
+    xadrez_expanded = np.clip(xadrez_expanded, 0, 255).astype(np.uint8)
+    xadrez_expanded = expansao_histograma(xadrez_expanded)
+    xadrez_full.atualizar_imagem(xadrez_expanded)
+    xadrez_full.salvar_imagem("outputs/xadrez_full.png")
 
-    # Aplicar a expansão de histograma na imagem combinada
-    expanded_image = expansao_histograma(cd_hor.array_img)
+    test_hor = ImageModel("assets/testpat.1k.color2.tif")
+    img_sobel_hor = filtro_sobel(test_hor.array_img, arq_sobel_hor)
+    test_hor.atualizar_imagem(img_sobel_hor)
+    test_hor.salvar_imagem("outputs/testpat_sobel_hor.png")
+    print("Imagem testpat_sobel_hor salva com sucesso!")
 
-    cd_hor.atualizar_imagem(expanded_image) 
-    # Salvar a imagem expandida
-    cd_hor.salvar_imagem("outputs/cd_expanded_image.jpg")
-    print("Imagem combinada expandida salva com sucesso!")
+    test_vert = ImageModel("assets/testpat.1k.color2.tif")
+    img_sobel_vert = filtro_sobel(test_vert.array_img, arq_sobel_vert)
+    test_vert.atualizar_imagem(img_sobel_vert)
+    test_vert.salvar_imagem("outputs/testpat_sobel_vert.png")
+
+    test_full = ImageModel("assets/testpat.1k.color2.tif")
+    test_expanded = np.abs(img_sobel_hor.astype(np.int16)) + np.abs(img_sobel_vert.astype(np.int16))
+    test_expanded = np.clip(test_expanded, 0, 255).astype(np.uint8)
+    test_expanded = expansao_histograma(test_expanded) 
+    test_full.atualizar_imagem(test_expanded)
+    test_full.salvar_imagem("outputs/testpat_full.png")
+
+    #cd_hor.atualizar_imagem(expanded_image) 
+    #Salvar a imagem expandida
+    #cd_hor.salvar_imagem("outputs/cd_expanded_image.jpg")
+    #print("Imagem combinada expandida salva com sucesso!")
     
     #Criar uma instância da classe ImageModel e carregar a imagem
     #Substitua pelo nome da sua imagem
