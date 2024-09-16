@@ -6,29 +6,27 @@ import numpy as np
 
 
 def apply_convolution(image, dimensoes, offset, mask):
-    img = image.copy()
-    mask = mask.copy()
-    new_img = np.zeros_like(img)
+    new_img = np.zeros_like(image)
 
     r_mask, c_mask = dimensoes 
-    r_img, c_img = img.shape[:2]
+    r_img, c_img = image.shape[:2]
 
     pivo = [int(np.ceil(r_mask / 2) - 1),
             int(np.ceil(c_mask / 2) - 1)]
 
     print('Pivo[i, j] =', pivo)
 
-    channels = img.shape[2] if len(img.shape) == 3 else 1
+    channels = image.shape[2] if len(image.shape) == 3 else 1
 
     for i in tqdm(range(pivo[0], r_img - pivo[0]), desc="Aplicando convolução"):
         for j in range(pivo[1], c_img - pivo[1]):
             if channels == 1:
-                region = img[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1]
+                region = image[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1]
                 new_value = np.sum(region * mask)
                 new_img[i, j] = np.abs(new_value)
             else:
                 for c in range(channels):
-                    region = img[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1, c]
+                    region = image[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1, c]
                     new_value = np.sum(region * mask)
                     new_img[i, j, c] = np.abs(new_value)
 
@@ -125,10 +123,7 @@ def main():
     arq_gauss = FilterModel("assets/filtro_gaussiano.txt")
     arq_sobel_vert = FilterModel("assets/filtro_sobel_vertical.txt")
     arq_sobel_hor = FilterModel("assets/filtro_sobel_horizontal.txt")
-    #print("arq_gauss:", arq_gauss)
-    #print("arq_gauss:", type(arq_gauss.matriz))
-    #print("arq_sobel_vert:", arq_sobel_vert)
-    #print("arq_sobel_hor:", arq_sobel_hor)
+
     image = ImageModel("assets/tigre.jpeg")
     image_gauss = filtro_gaussiano(image.array_img, arq_gauss)
     image.atualizar_imagem(image_gauss)
@@ -146,6 +141,14 @@ def main():
     shapes_hor.atualizar_imagem(img_sobel_hor)
     shapes_hor.salvar_imagem("outputs/shapes_sobel_hor.png")
     print("Imagem shapes_sobel_hor salva com sucesso!")
+
+    shapes_full = ImageModel("assets/Shapes.png")
+    shapes_expanded = np.abs(img_sobel_hor.astype(np.int16)) + np.abs(img_sobel_vert.astype(np.int16))
+    shapes_expanded = np.clip(shapes_expanded, 0, 255).astype(np.uint8)
+    shapes_expanded = expansao_histograma(shapes_expanded)
+    shapes_full.atualizar_imagem(shapes_expanded)
+    shapes_full.salvar_imagem("outputs/shapes_full.png")
+    print("Imagem shapes_full salva com sucesso!")
 
     cd_hor = ImageModel("assets/cd.png")
     img_sobel_hor = filtro_sobel(cd_hor.array_img, arq_sobel_hor)
@@ -190,19 +193,12 @@ def main():
     test_expanded = expansao_histograma(test_expanded) 
     test_full.atualizar_imagem(test_expanded)
     test_full.salvar_imagem("outputs/testpat_full.png")
-
-    #cd_hor.atualizar_imagem(expanded_image) 
-    #Salvar a imagem expandida
-    #cd_hor.salvar_imagem("outputs/cd_expanded_image.jpg")
-    #print("Imagem combinada expandida salva com sucesso!")
     
     #Criar uma instância da classe ImageModel e carregar a imagem
     #Substitua pelo nome da sua imagem
     img_model = ImageModel('assets/testpat.1k.color2.tif')
     # Aplicar o filtro triangular
     filtered_image = apply_triangular_filter(img_model.array_img)
-    # Aplicar o filtro à banda Y (YIQ)
-    filtered_image = apply_filter_to_y_band(img_model.array_img)
     # Atualizar a imagem no modelo com o novo array de pixels filtrados
     img_model.atualizar_imagem(filtered_image)
     # Salvar a imagem filtrada
