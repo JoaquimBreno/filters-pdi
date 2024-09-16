@@ -43,6 +43,19 @@ def filtro_gaussiano(imagem, arq):
     matriz = [[elemento / 273 for elemento in linha] for linha in arq.matriz]
     return apply_convolution(imagem, arq.dimensoes, arq.offset, matriz)
 
+def expansao_histograma(image):
+    if len(image.shape) == 3:  # Caso de imagens coloridas
+        resultado = np.zeros_like(image)
+        for c in range(image.shape[2]):
+            canal = image[:, :, c]
+            min_val = np.min(canal)
+            max_val = np.max(canal)
+            resultado[:, :, c] = np.clip((canal - min_val) / (max_val - min_val) * 255, 0, 255)
+    else:  # Caso de imagem em escala de cinza
+        min_val = np.min(image)
+        max_val = np.max(image)
+        resultado = np.clip((image - min_val) / (max_val - min_val) * 255, 0, 255)
+    return resultado.astype(np.uint8)
 
 # Função para o filtro pontual triangular baseado no gráfico
 def triangular_filter(pixel_value):
@@ -115,7 +128,7 @@ def apply_filter_to_y_band(image_array):
 def main():
     arq_gauss = FilterModel("assets/filtro_gaussiano.txt")
     # arq_sobel_vert = FilterModel("assets/filtro_sobel_vertical.txt")
-    # arq_sobel_hor = FilterModel("assets/filtro_sobel_horizontal.txt")
+    arq_sobel_hor = FilterModel("assets/filtro_sobel_horizontal.txt")
     # print("arq_gauss:", arq_gauss)
     # print("arq_gauss:", type(arq_gauss.matriz))
     # print("arq_sobel_vert:", arq_sobel_vert)
@@ -131,10 +144,11 @@ def main():
     # shapes_vert.atualizar_imagem(img_sobel_vert)
     # shapes_vert.salvar_imagem("outputs/shapes_sobel_vert.png")
 
-    # shapes_hor = ImageModel("assets/Shapes.png")
-    # img_sobel_hor = filtro_sobel(shapes_hor.array_img, arq_sobel_hor)
-    # shapes_hor.atualizar_imagem(img_sobel_hor)
-    # shapes_hor.salvar_imagem("outputs/shapes_sobel_hor.png")
+    shapes_hor = ImageModel("assets/Shapes.png")
+    img_sobel_hor = filtro_sobel(shapes_hor.array_img, arq_sobel_hor)
+    exp_img_sobel_hor = expansao_histograma(img_sobel_hor)
+    shapes_hor.atualizar_imagem(exp_img_sobel_hor)
+    shapes_hor.salvar_imagem("outputs/exp_shapes_sobel_hor.png")
 
     # Criar uma instância da classe ImageModel e carregar a imagem
     # Substitua pelo nome da sua imagem
