@@ -5,27 +5,132 @@ import numpy as np
 import numpy as np
 
 
-def apply_convolution(image, dimensoes, offset, matriz):
-    height, width, _ = image.shape
+def apply_convolution(image, dimensoes, offset, mask):
+    img = image.copy()
+    mask = mask.copy()
+    new_img = np.zeros_like(img)
+
+    r_mask, c_mask = dimensoes 
+    r_img, c_img = img.shape[:2]
+
+    pivo = [int(np.ceil(r_mask / 2) - 1),
+            int(np.ceil(c_mask / 2) - 1)]
+
+    print('Pivo[i, j] =', pivo)
+
+    channels = img.shape[2] if len(img.shape) == 3 else 1
+
+    for i in tqdm(range(pivo[0], r_img - pivo[0]), desc="Aplicando convolução"):
+        for j in range(pivo[1], c_img - pivo[1]):
+            if channels == 1:
+                region = img[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1]
+                new_value = np.sum(region * mask)
+                new_img[i, j] = np.abs(new_value)
+            else:
+                for c in range(channels):
+                    region = img[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1, c]
+                    new_value = np.sum(region * mask)
+                    new_img[i, j, c] = np.abs(new_value)
+
+    new_img = new_img.astype(np.int16) + offset
+    new_img[new_img > 255] = 255
+    new_img[new_img < 0] = 0
+
+    return new_img.astype(np.uint8)
+'''
+def apply_convolution(image: np.array, dimensoes: tuple, offset: int, matriz: np.array) -> np.array:
+    img = image.copy()
+    mask = matriz.copy()
+    new_img = np.zeros_like(img)
+
+    r_mask, c_mask = dimensoes
+
+    pivo = [int(np.ceil(r_mask / 2) - 1),
+            int(np.ceil(c_mask / 2) - 1)]
+
+    print('Pivo[i, j] =', pivo)
+
+    channels = img.shape[2] if len(img.shape) == 3 else 1
+
+    padded_img_shape = (img.shape[0] + 2 * pivo[0], img.shape[1] + 2 * pivo[1], channels)
+    img_padded = np.zeros(padded_img_shape, dtype=img.dtype)
+
+    if channels == 1:
+        img_padded[pivo[0]:pivo[0] + img.shape[0], pivo[1]:pivo[1] + img.shape[1], 0] = img
+    else:
+        img_padded[pivo[0]:pivo[0] + img.shape[0], pivo[1]:pivo[1] + img.shape[1], :] = img
+
+    strides = img_padded.strides
+    height, width = img.shape[0], img.shape[1]
+
+    if channels == 1:
+        sub_imgs = np.lib.stride_tricks.as_strided(
+            img_padded,
+            shape=(height, width, r_mask, c_mask),
+            strides=(strides[0], strides[1], strides[0], strides[1])
+        )
+
+        correlation = np.abs(np.einsum('ijkl, kl->ij', sub_imgs, mask))
+        new_img[:, :] = correlation
+    else:
+        sub_imgs = np.lib.stride_tricks.as_strided(
+            img_padded,
+            shape=(height, width, r_mask, c_mask, channels),
+            strides=(strides[0], strides[1], strides[0], strides[1], strides[2])
+        )
+
+        correlation = np.abs(np.einsum('ijklm,kl->ijm', sub_imgs, mask))
+        new_img[:, :, :] = correlation
+
+    new_img = new_img.astype(np.int16) + offset
+    new_img[new_img > 255] = 255
+    new_img[new_img < 0] = 0
+
+    return new_img.astype(np.uint8)
+'''
+def aplicar_correlacao(imagem, dimensoes, offset, matriz):
+    print("Shape da imagem:", imagem.shape)
+    altura, largura = imagem.shape[:2]
+
     m, n = dimensoes
-    pad_h, pad_w = m // 2, n // 2
 
-    # Expansão por zeros
-    padded_image = np.pad(image, ((pad_h, pad_h), (pad_w, pad_w),
-                          (0, 0)), mode='constant', constant_values=0)
-    output_image = np.zeros_like(image)
+    # Cria uma nova imagem inicializada como um array de zeros
+    # Esta imagem será do mesmo tamanho e tipo que a imagem original
+    nova_imagem = np.zeros_like(imagem)
 
-    # Aplicação da convolução sobre cada canal R, G, B
-    for i in tqdm(range(pad_h, height + pad_h), desc="Aplicando convolução"):
-        for j in range(pad_w, width + pad_w):
-            for c in range(3):  # 3 canais (R, G, B)
-                region = padded_image[i - pad_h: i +
-                                      pad_h + 1, j - pad_w: j + pad_w + 1, c]
-                value = np.sum(region * matriz) + offset
-                output_image[i - pad_h, j - pad_w,
-                             c] = min(max(int(value), 0), 255)
+    # Itera sobre cada pixel da imagem
+    for y in tqdm(range(altura), desc="Aplicando correlação"):
+        for x in range(largura):
+            # Inicializa a soma dos valores RGB para o novo pixel
+            soma_r = soma_g = soma_b = 0
 
-    return output_image
+            # Itera sobre o filtro/máscara
+            for dy in range(-m//2, m//2 + 1):
+                for dx in range(-n//2, n//2 + 1):
+                    # Calcula as coordenadas do pixel atual na imagem para aplicação do filtro
+                    x_filtro, y_filtro = x + dx, y + dy
+
+                    # Verifica se as coordenadas estão dentro dos limites da imagem
+                    if 0 <= x_filtro < largura and 0 <= y_filtro < altura:
+                        # Obtém o pixel atual na imagem
+                        pixel = imagem[y_filtro, x_filtro]
+                        # Obtém o coeficiente correspondente do filtro para o pixel atual
+                        coeficiente_filtro = matriz[dy + m//2][dx + n//2]
+
+                        # Aplica o filtro e soma os resultados para cada canal de cor
+                        soma_r += pixel[0] * coeficiente_filtro
+                        soma_g += pixel[1] * coeficiente_filtro
+                        soma_b += pixel[2] * coeficiente_filtro
+
+            # Após aplicar o filtro em todos os pixels sob o kernel do filtro,
+            # ajusta os valores acumulados com base no offset e se certifica de que
+            # permanecem dentro dos limites válidos de um byte (0 a 255)
+            nova_imagem[y, x] = [min(255, max(0, soma_r + offset)),
+                                 min(255, max(0, soma_g + offset)),
+                                 min(255, max(0, soma_b + offset))]
+
+    # Retorna a imagem resultante após a aplicação do filtro
+    return nova_imagem
 
 
 def filtro_sobel(imagem, arq):
@@ -127,31 +232,29 @@ def apply_filter_to_y_band(image_array):
 
 def main():
     arq_gauss = FilterModel("assets/filtro_gaussiano.txt")
-    # arq_sobel_vert = FilterModel("assets/filtro_sobel_vertical.txt")
+    arq_sobel_vert = FilterModel("assets/filtro_sobel_vertical.txt")
     arq_sobel_hor = FilterModel("assets/filtro_sobel_horizontal.txt")
-    # print("arq_gauss:", arq_gauss)
-    # print("arq_gauss:", type(arq_gauss.matriz))
-    # print("arq_sobel_vert:", arq_sobel_vert)
-    # print("arq_sobel_hor:", arq_sobel_hor)
-
+    #print("arq_gauss:", arq_gauss)
+    #print("arq_gauss:", type(arq_gauss.matriz))
+    #print("arq_sobel_vert:", arq_sobel_vert)
+    #print("arq_sobel_hor:", arq_sobel_hor)
     image = ImageModel("assets/testpat.1k.color2.tif")
     image_gauss = filtro_gaussiano(image.array_img, arq_gauss)
     image.atualizar_imagem(image_gauss)
-    image.salvar_imagem("outputs/testpat.png")
-
-    # shapes_vert = ImageModel("assets/Shapes.png")
-    # img_sobel_vert = filtro_sobel(shapes_vert.array_img, arq_sobel_vert)
-    # shapes_vert.atualizar_imagem(img_sobel_vert)
-    # shapes_vert.salvar_imagem("outputs/shapes_sobel_vert.png")
-
+    image.salvar_imagem("outputs/testpat.tif")
+    print("Imagem gauss salva com sucesso!")
+    shapes_vert = ImageModel("assets/Shapes.png")
+    img_sobel_vert = filtro_sobel(shapes_vert.array_img, arq_sobel_vert)
+    shapes_vert.atualizar_imagem(img_sobel_vert)
+    shapes_vert.salvar_imagem("outputs/shapes_sobel_vert.png")
+    print("Imagem shapes_sobel_vert salva com sucesso!")
     shapes_hor = ImageModel("assets/Shapes.png")
     img_sobel_hor = filtro_sobel(shapes_hor.array_img, arq_sobel_hor)
-    exp_img_sobel_hor = expansao_histograma(img_sobel_hor)
-    shapes_hor.atualizar_imagem(exp_img_sobel_hor)
-    shapes_hor.salvar_imagem("outputs/exp_shapes_sobel_hor.png")
-
-    # Criar uma instância da classe ImageModel e carregar a imagem
-    # Substitua pelo nome da sua imagem
+    shapes_hor.atualizar_imagem(img_sobel_hor)
+    shapes_hor.salvar_imagem("outputs/shapes_sobel_hor.png")
+    print("Imagem shapes_sobel_hor salva com sucesso!")
+    #Criar uma instância da classe ImageModel e carregar a imagem
+    #Substitua pelo nome da sua imagem
     img_model = ImageModel('assets/testpat.1k.color2.tif')
     # Aplicar o filtro triangular
     filtered_image = apply_triangular_filter(img_model.array_img)
