@@ -75,8 +75,6 @@ def triangular_filter(pixel_value):
         return np.clip(((255 - pixel_value) / 128) * 255, 0, 255)
 
 # Aplicação do filtro em uma imagem RGB
-
-
 def apply_triangular_filter(image_array):
     filtered_image = np.zeros_like(image_array)
 
@@ -89,8 +87,6 @@ def apply_triangular_filter(image_array):
     return filtered_image
 
 # Função para converter RGB para YIQ
-
-
 def rgb_to_yiq(rgb_array):
     yiq_array = np.zeros_like(rgb_array, dtype=float)
     for i in tqdm(range(rgb_array.shape[0]), desc="Converting RGB to YIQ"):
@@ -103,8 +99,6 @@ def rgb_to_yiq(rgb_array):
     return yiq_array
 
 # Função para converter YIQ para RGB
-
-
 def yiq_to_rgb(yiq_array):
     rgb_array = np.zeros_like(yiq_array, dtype=float)
     for i in tqdm(range(yiq_array.shape[0]), desc="Converting YIQ to RGB"):
@@ -117,8 +111,6 @@ def yiq_to_rgb(yiq_array):
     return rgb_array.astype(np.uint8)
 
 # Aplicação do filtro pontual apenas na banda Y
-
-
 def apply_filter_to_y_band(image_array):
     # Converte RGB para YIQ
     yiq_image = rgb_to_yiq(image_array)
@@ -133,7 +125,6 @@ def apply_filter_to_y_band(image_array):
     filtered_rgb_image = yiq_to_rgb(yiq_image)
 
     return filtered_rgb_image
-
 
 def main():
     arq_gauss = FilterModel("assets/filtro_gaussiano.txt")
