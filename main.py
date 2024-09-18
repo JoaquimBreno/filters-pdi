@@ -13,24 +13,27 @@ def apply_convolution(image, dimensoes, offset, mask):
     r_mask, c_mask = dimensoes 
     r_img, c_img = img.shape[:2]
 
-    pivo = [int(np.ceil(r_mask / 2) - 1),
-            int(np.ceil(c_mask / 2) - 1)]
+    pivo = [r_mask // 2, c_mask // 2 if c_mask % 2 != 0 else (c_mask // 2) - 1]
+    # pivo = [int(np.ceil(r_mask / 2) - 1),
+    #         int(np.ceil(c_mask / 2) - 1)]
 
     print('Pivo[i, j] =', pivo)
 
     channels = img.shape[2] if len(img.shape) == 3 else 1
 
-    for i in tqdm(range(pivo[0], r_img - pivo[0]), desc="Aplicando convolução"):
-        for j in range(pivo[1], c_img - pivo[1]):
+    for i in tqdm(range(pivo[0], r_img - r_mask + pivo[0] + 1), desc="Aplicando convolução"):
+        for j in range(pivo[1], c_img - c_mask + pivo[1] + 1):
             if channels == 1:
-                region = img[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1]
+                #region = img[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1]
+                region = img[i - pivo[0]:i - pivo[0] + r_mask, j - pivo[1]:j - pivo[1] + c_mask]
                 new_value = np.sum(region * mask)
                 new_img[i, j] = np.abs(new_value)
             else:
                 for c in range(channels):
-                    region = img[i - pivo[0]:i + pivo[0] + 1, j - pivo[1]:j + pivo[1] + 1, c]
+                    region = img[i - pivo[0]:i - pivo[0] + r_mask, j - pivo[1]:j - pivo[1] + c_mask,c]
                     new_value = np.sum(region * mask)
                     new_img[i, j, c] = np.abs(new_value)
+
 
     new_img = new_img.astype(np.int16) + offset
     new_img[new_img > 255] = 255
@@ -130,66 +133,68 @@ def main():
     arq_gauss = FilterModel("assets/filtro_gaussiano.txt")
     arq_sobel_vert = FilterModel("assets/filtro_sobel_vertical.txt")
     arq_sobel_hor = FilterModel("assets/filtro_sobel_horizontal.txt")
-    #print("arq_gauss:", arq_gauss)
-    #print("arq_gauss:", type(arq_gauss.matriz))
-    #print("arq_sobel_vert:", arq_sobel_vert)
-    #print("arq_sobel_hor:", arq_sobel_hor)
+    print("arq_gauss:", arq_gauss)
+    print("arq_gauss:", type(arq_gauss.matriz))
+    print("arq_sobel_vert:", arq_sobel_vert)
+    print("arq_sobel_hor:", arq_sobel_hor)
     image = ImageModel("assets/tigre.jpeg")
     image_gauss = filtro_gaussiano(image.array_img, arq_gauss)
     image.atualizar_imagem(image_gauss)
     image.salvar_imagem("outputs/tigre.jpeg")
 
-    print("Imagem gauss salva com sucesso!")
-    shapes_vert = ImageModel("assets/Shapes.png")
-    img_sobel_vert = filtro_sobel(shapes_vert.array_img, arq_sobel_vert)
-    shapes_vert.atualizar_imagem(img_sobel_vert)
-    shapes_vert.salvar_imagem("outputs/shapes_sobel_vert.png")
-    print("Imagem shapes_sobel_vert salva com sucesso!")
+    # print("Imagem gauss salva com sucesso!")
+    # shapes_vert = ImageModel("assets/Shapes.png")
+    # img_sobel_vert = filtro_sobel(shapes_vert.array_img, arq_sobel_vert)
+    # shapes_vert.atualizar_imagem(img_sobel_vert)
+    # shapes_vert.salvar_imagem("outputs/new_shapes_sobel_vert.png")
+
+    # print("Imagem shapes_sobel_vert salva com sucesso!")
+
     shapes_hor = ImageModel("assets/Shapes.png")
     img_sobel_hor = filtro_sobel(shapes_hor.array_img, arq_sobel_hor)
     shapes_hor.atualizar_imagem(img_sobel_hor)
     shapes_hor.salvar_imagem("outputs/shapes_sobel_hor.png")
     print("Imagem shapes_sobel_hor salva com sucesso!")
 
-    cd_hor = ImageModel("assets/cd.png")
-    img_sobel_hor = filtro_sobel(cd_hor.array_img, arq_sobel_hor)
-    cd_hor.atualizar_imagem(img_sobel_hor)
-    cd_hor.salvar_imagem("outputs/cd_sobel_hor.png")
-    print("Imagem cd_sobel_hor salva com sucesso!")
+    # cd_hor = ImageModel("assets/cd.png")
+    # img_sobel_hor = filtro_sobel(cd_hor.array_img, arq_sobel_hor)
+    # cd_hor.atualizar_imagem(img_sobel_hor)
+    # cd_hor.salvar_imagem("outputs/cd_sobel_hor.png")
+    # print("Imagem cd_sobel_hor salva com sucesso!")
 
 
     # Aplicar a expansão de histograma na imagem combinada
-    expanded_image = expansao_histograma(cd_hor.array_img)
+    # expanded_image = expansao_histograma(cd_hor.array_img)
 
-    cd_hor.atualizar_imagem(expanded_image) 
+    # cd_hor.atualizar_imagem(expanded_image) 
     # Salvar a imagem expandida
-    cd_hor.salvar_imagem("outputs/cd_expanded_image.jpg")
-    print("Imagem combinada expandida salva com sucesso!")
+    # cd_hor.salvar_imagem("outputs/cd_expanded_image.jpg")
+    # print("Imagem combinada expandida salva com sucesso!")
     
     #Criar uma instância da classe ImageModel e carregar a imagem
     #Substitua pelo nome da sua imagem
-    img_model = ImageModel('assets/testpat.1k.color2.tif')
-    # Aplicar o filtro triangular
-    filtered_image = apply_triangular_filter(img_model.array_img)
-    # Aplicar o filtro à banda Y (YIQ)
-    filtered_image = apply_filter_to_y_band(img_model.array_img)
-    # Atualizar a imagem no modelo com o novo array de pixels filtrados
-    img_model.atualizar_imagem(filtered_image)
-    # Salvar a imagem filtrada
-    img_model.salvar_imagem('outputs/pontualRGB.jpg')
+    # img_model = ImageModel('assets/testpat.1k.color2.tif')
+    # # Aplicar o filtro triangular
+    # filtered_image = apply_triangular_filter(img_model.array_img)
+    # # Aplicar o filtro à banda Y (YIQ)
+    # filtered_image = apply_filter_to_y_band(img_model.array_img)
+    # # Atualizar a imagem no modelo com o novo array de pixels filtrados
+    # img_model.atualizar_imagem(filtered_image)
+    # # Salvar a imagem filtrada
+    # img_model.salvar_imagem('outputs/pontualRGB.jpg')
 
     # Criar uma instância da classe ImageModel e carregar a imagem
     # Substitua pelo nome da sua imagem
-    img_model = ImageModel('assets/testpat.1k.color2.tif')
+    # img_model = ImageModel('assets/testpat.1k.color2.tif')
 
-    # Aplicar o filtro à banda Y (YIQ)
-    filtered_image = apply_filter_to_y_band(img_model.array_img)
+    # # Aplicar o filtro à banda Y (YIQ)
+    # filtered_image = apply_filter_to_y_band(img_model.array_img)
 
-    # Atualizar a imagem no modelo com o novo array de pixels filtrados
-    img_model.atualizar_imagem(filtered_image)
+    # # Atualizar a imagem no modelo com o novo array de pixels filtrados
+    # img_model.atualizar_imagem(filtered_image)
 
-    # Salvar a imagem filtrada
-    img_model.salvar_imagem('outputs/pontualYIQ.jpg')
+    # # Salvar a imagem filtrada
+    # img_model.salvar_imagem('outputs/pontualYIQ.jpg')
 
 
 if __name__ == "__main__":
